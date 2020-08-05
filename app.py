@@ -1,5 +1,6 @@
 import streamlit as st
-from transformers import BartForSequenceClassification, BartTokenizer
+from transformers import BartForSequenceClassification, BartTokenizer, DistilBertTokenizer, DistilBertForSequenceClassification, AutoTokenizer, AutoModelForSequenceClassification 
+
 import torch
 import numpy as np
 import contextlib
@@ -12,8 +13,8 @@ with open("hit_log.txt", mode='a') as file:
     file.write(str(datetime.datetime.now()) + '\n')
 
 MODEL_DESC = {
-    'Bart MNLI': """Bart with a classification head trained on MNLI.\n\nSequences are posed as NLI premises and topic labels are turned into premises, i.e. `business` -> `This text is about business.`""",
-    'Bart MNLI + Yahoo Answers': """Bart with a classification head trained on MNLI and then further fine-tuned on Yahoo Answers topic classification.\n\nSequences are posed as NLI premises and topic labels are turned into premises, i.e. `business` -> `This text is about business.`""",
+    'prunebert': """PruneBert classification head trained on MNLI.\n\nSequences are posed as NLI premises and topic labels are turned into premises, i.e. `business` -> `This text is about business.`""",
+    'distilbert': """DistilBert classification head trained on MNLI.\n\nSequences are posed as NLI premises and topic labels are turned into premises, i.e. `business` -> `This text is about business.`""",
 }
 
 ZSL_DESC = """Recently, the NLP science community has begun to pay increasing attention to zero-shot and few-shot applications, such as in the [paper from OpenAI](https://arxiv.org/abs/2005.14165) introducing GPT-3. This demo shows how 🤗 Transformers can be used for zero-shot topic classification, the task of predicting a topic that the model has not been trained on."""
@@ -41,27 +42,38 @@ prob_label_is_true = probs[:,1]
 ```"""
 
 model_ids = {
-    'Bart MNLI': 'bart-large-mnli',
-    'Bart MNLI + Yahoo Answers': './bart_mnli_topics'
+    'distilbert': 'textattack/distilbert-base-uncased-MNLI',
+    'prunebert':  'huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli' 
+}
+
+tokenizer_ids = {
+    model_ids['distilbert']: 'distilbert-base-uncased',
+    model_ids['prunebert']: "huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli"
 }
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
+
+@st.cache(allow_output_mutation=True)
+def load_model(model_id):
+    return AutoModelForSequenceClassification.from_pretrained(model_id)
+
 @st.cache(allow_output_mutation=True)
 def load_models():
-    return {id: BartForSequenceClassification.from_pretrained(id).to(device) for id in model_ids.values()}
+    return {id: load_model(id).to(device) for id in model_ids.values()}
 
 models = load_models()
 
 
 @st.cache(allow_output_mutation=True)
 def load_tokenizer(tok_id):
-    return BartTokenizer.from_pretrained(tok_id)
-
+    return AutoTokenizer.from_pretrained(tok_id)
+    
 @st.cache(allow_output_mutation=True, show_spinner=False)
 def classify_candidate(nli_model_id, sequence, label, do_print_code):
     nli_model = models[nli_model_id]
-    tokenizer = load_tokenizer('bart-large')
+    tok_id = tokenizer_ids[nli_model_id]
+    tokenizer = load_tokenizer(tok_id)
 
     # pose sequence as a NLI premise and label as a hypothesis
     premise = sequence
