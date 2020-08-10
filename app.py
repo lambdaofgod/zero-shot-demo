@@ -15,6 +15,7 @@ with open("hit_log.txt", mode='a') as file:
 MODEL_DESC = {
     'prunebert': """PruneBert classification head trained on MNLI.\n\nSequences are posed as NLI premises and topic labels are turned into premises, i.e. `business` -> `This text is about business.`""",
     'distilbert': """DistilBert classification head trained on MNLI.\n\nSequences are posed as NLI premises and topic labels are turned into premises, i.e. `business` -> `This text is about business.`""",
+    'albert': """AlBert"""
 }
 
 ZSL_DESC = """Recently, the NLP science community has begun to pay increasing attention to zero-shot and few-shot applications, such as in the [paper from OpenAI](https://arxiv.org/abs/2005.14165) introducing GPT-3. This demo shows how 🤗 Transformers can be used for zero-shot topic classification, the task of predicting a topic that the model has not been trained on."""
@@ -43,12 +44,14 @@ prob_label_is_true = probs[:,1]
 
 model_ids = {
     'distilbert': 'textattack/distilbert-base-uncased-MNLI',
-    'prunebert':  'huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli' 
+    'prunebert':  'huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli',
+    'albert': "textattack/albert-base-v2-snli"
 }
 
 tokenizer_ids = {
     model_ids['distilbert']: 'distilbert-base-uncased',
-    model_ids['prunebert']: "huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli"
+    model_ids['prunebert']: "huggingface/prunebert-base-uncased-6-finepruned-w-distil-mnli",
+    model_ids['albert']: "textattack/albert-base-v2-snli"
 }
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
